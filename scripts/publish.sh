@@ -12,13 +12,11 @@ package_version="${version}~${ubuntu_codename}"
 
 apt -y install cmake g++ git >/dev/null
 
-rm -rf pkg work/build
+rm -rf pkg work
 mkdir -p pkg/root pkg/runtime/DEBIAN pkg/development/DEBIAN
 
-if [ ! -d "work/oatpp-src" ]; then
-    echo "Cloning oatpp $version"
-    git clone --branch "$version" --depth 1 https://github.com/oatpp/oatpp.git work/oatpp-src
-fi
+echo "Cloning oatpp $version"
+git clone --branch "$version" --depth 1 https://github.com/oatpp/oatpp.git work/oatpp-src
 
 cmake -S work/oatpp-src -B work/build \
     -DCMAKE_BUILD_TYPE=Release \
