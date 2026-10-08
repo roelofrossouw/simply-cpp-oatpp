@@ -28,19 +28,21 @@ cmake -S work/oatpp-src -B work/build \
 cmake --build work/build -j"$(nproc)"
 DESTDIR="$(pwd)/pkg/root" cmake --install work/build --prefix /usr
 
-mkdir -p pkg/runtime/usr/lib pkg/development/usr/lib pkg/development/usr
-mv pkg/root/usr/lib/liboatpp.so.* pkg/runtime/usr/lib/
-if [ -e pkg/root/usr/lib/liboatpp.so ]; then
-    mv pkg/root/usr/lib/liboatpp.so pkg/development/usr/lib/
+shared_library=$(find pkg/root/usr -type f -name 'liboatpp.so.*' -print -quit)
+if [ -z "$shared_library" ]; then
+    echo "oatpp shared library was not installed" >&2
+    exit 1
 fi
-if [ -e pkg/root/usr/lib/liboatpp.a ]; then
-    mv pkg/root/usr/lib/liboatpp.a pkg/development/usr/lib/
-fi
-mv pkg/root/usr/include pkg/development/usr/
-if [ -d pkg/root/usr/lib/cmake ]; then
-    mv pkg/root/usr/lib/cmake pkg/development/usr/lib/
-fi
-rmdir pkg/root/usr/lib pkg/root/usr
+
+shared_library_dir=$(dirname "$shared_library")
+runtime_library_dir="pkg/runtime${shared_library_dir#pkg/root}"
+mkdir -p "$runtime_library_dir"
+find "$shared_library_dir" -maxdepth 1 \( -type f -o -type l \) -name 'liboatpp.so.*' \
+    -exec mv {} "$runtime_library_dir/" \;
+
+mkdir -p pkg/development
+mv pkg/root/usr pkg/development/
+rmdir pkg/root
 
 cat > pkg/runtime/DEBIAN/control <<EOF
 Package: $package
