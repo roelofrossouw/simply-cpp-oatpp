@@ -36,7 +36,7 @@ logged() {
 
 deploy_to() {
     local server="$1"
-    rsync -av "$dirpath/" "root@$server:/var/www/build/$module/" --exclude=".git" --exclude="work" --exclude="pkg" --delete || return
+    rsync -av --no-owner --no-group "$dirpath/" "root@$server:/var/www/build/$module/" --exclude=".git" --exclude="work" --exclude="pkg" --delete || return
     ssh "root@$server" "cd /var/www/build/$module && bash scripts/publish.sh"
 }
 
