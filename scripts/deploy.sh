@@ -1,52 +1,16 @@
 #!/bin/bash
 #~~~~~~~~~~
-# Builds and publishes oatpp independently on every Ubuntu build server.
-
-set -euo pipefail
-
-module="sc-oatpp"
-servers=("$@")
-if [ ${#servers[@]} -eq 0 ]; then
-    servers=(build-jammy build-noble build-resolute)
-fi
+# Deploys this packaging project through the suite's shared packaging/deploy.sh
+# (one script for every project in the suite's packaging/ folder since 2026-11-17).
+#
+# Usage: scripts/deploy.sh [server...]
+#   builds on every server named (default: build-jammy build-noble build-resolute): oatpp is built from source per Ubuntu release
 
 scriptfile=$(realpath "$0")
-scriptpath="${scriptfile%/*}"
-dirpath=$(realpath "$scriptpath"/..)
-
-# Each server's output (rsync and the build server's) is also kept in a local log named after
-# the server: <suite>/logs/<server>/ inside the simply-cpp suite, otherwise logs/<server>/ in
-# /tmp. Skipped when the caller already logs the run (publish-apt.sh sets SC_LOGGING).
+dirpath=$(realpath "${scriptfile%/*}"/..)
 suite=$(git -C "$dirpath" rev-parse --show-superproject-working-tree 2>/dev/null)
-logs="${suite:-${TMPDIR:-/tmp}/simply-cpp}/logs"
-logged() {
-    local server="$1"
-    shift
-    if [ -n "${SC_LOGGING:-}" ]; then
-        "$@"
-        return
-    fi
-    mkdir -p "$logs/$server"
-    local log_file
-    log_file="$logs/$server/$(date -u +%Y%m%dT%H%M%SZ)-$module.log"
-    echo "Logging to $log_file"
-    "$@" 2>&1 | tee "$log_file"
-    return "${PIPESTATUS[0]}"
-}
-
-deploy_to() {
-    local server="$1"
-    rsync -av --no-owner --no-group "$dirpath/" "root@$server:/var/www/build/$module/" --exclude=".git" --exclude="work" --exclude="pkg" --delete || return
-    ssh "root@$server" "cd /var/www/build/$module && bash scripts/publish.sh"
-}
-
-overall=0
-for server in "${servers[@]}"; do
-    echo "==> $server"
-    if ! logged "$server" deploy_to "$server"; then
-        echo "$server FAILED" >&2
-        overall=1
-    fi
-done
-
-exit "$overall"
+if [ -z "$suite" ] || [ ! -x "$suite/packaging/deploy.sh" ]; then
+    echo "$0: needs the simply-cpp suite checkout (its packaging/deploy.sh)" >&2
+    exit 1
+fi
+exec "$suite/packaging/deploy.sh" --per-server "$dirpath" "$@"
