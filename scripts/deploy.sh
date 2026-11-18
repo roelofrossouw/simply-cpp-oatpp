@@ -4,7 +4,7 @@
 # (one script for every project in the suite's packaging/ folder since 2026-11-17).
 #
 # Usage: scripts/deploy.sh [server...]
-#   builds on every server named (default: build-jammy build-noble build-resolute): oatpp is built from source per Ubuntu release
+#   builds on every server named (default: build-noble build-resolute; name build-jammy to build it on demand): oatpp is built from source per Ubuntu release
 
 scriptfile=$(realpath "$0")
 dirpath=$(realpath "${scriptfile%/*}"/..)
